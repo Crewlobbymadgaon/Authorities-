@@ -42,7 +42,7 @@ header { height:var(--header-height); background:linear-gradient(90deg,var(--acc
 .block:focus-visible {
   box-shadow: 0 0 0 4px rgba(25,118,210,0.12);
 }
-  #authorityCard { display:none; max-width:900px; margin:20px auto; background:#fff; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.15); height:auto; max-height:75vh; display:flex; flex-direction:column; overflow:hidden; }
+#authorityCard { display:none; max-width:900px; margin:20px auto; background:#fff; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.15); height:auto; max-height:75vh; display:flex; flex-direction:column; overflow:hidden; }
 #authorityCard .sub-heading { position:sticky; top:0; background:#f4f8fb; color:#222; font-size:18px; font-weight:700; text-align:center; padding:12px; border-bottom:1px solid #e6eef6; z-index:2; display:flex; justify-content:space-between; align-items:center; gap:12px; }
 #authorityCard .card-body { flex:1 1 auto; overflow-y:auto; padding:18px 22px; font-size:15px; line-height:1.6; max-height:calc(75vh - 64px); outline:none; }
 .card-close { background:transparent; border:none; font-size:0.95rem; color:#444; cursor:pointer; padding:6px 8px; border-radius:8px; }
@@ -78,7 +78,7 @@ header { height:var(--header-height); background:linear-gradient(90deg,var(--acc
 <script src="https://unpkg.com/dompurify@2.4.0/dist/purify.min.js"></script>
 
 <script>
-/* ---------- Lightweight mapping + UI glue ---------- */
+/* ---------- Lightweight mapping + UI glue (cleaned) ---------- */
 
 let currentSystem = "";
 let currentCircumstance = "";
@@ -86,11 +86,11 @@ let openedFromSubmenu = false;
 let lastFocusedElement = null;
 let fragmentMap = null;
 
-/* helper */
+/* helpers */
 function el(id){ return document.getElementById(id); }
 function clearChildren(node){ while(node && node.firstChild) node.removeChild(node.firstChild); }
 
-/* load map.json */
+/* load map.json (cached) */
 async function loadFragmentMap() {
   if (fragmentMap) return fragmentMap;
   try {
@@ -127,7 +127,11 @@ async function loadCircumstances(){
     div.setAttribute("data-key", circ);
     div.textContent = circ;
     div.onclick = () => showSubMenu(circ);
-    div.onkeydown = (e) => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); showSubMenu(circ);} if(e.key==='Home'){ e.preventDefault(); grid.querySelector('.grid-item')?.focus(); } if(e.key==='End'){ e.preventDefault(); grid.querySelector('.grid-item:last-child')?.focus(); } };
+    div.onkeydown = (e) => {
+      if(e.key === "Enter" || e.key === " ") { e.preventDefault(); showSubMenu(circ);}
+      if(e.key==='Home'){ e.preventDefault(); grid.querySelector('.grid-item')?.focus(); }
+      if(e.key==='End'){ e.preventDefault(); grid.querySelector('.grid-item:last-child')?.focus(); }
+    };
     grid.appendChild(div);
   });
   grid.style.display = "grid";
@@ -137,53 +141,55 @@ async function loadCircumstances(){
   setTimeout(()=> grid.querySelector('.grid-item')?.focus(),80);
 }
 
-/* Show submenus for a circumstance (or open fragment directly) */
+/* Unified showSubMenu -> navigates to detail page (or shows submenu) */
 async function showSubMenu(circ){
   currentCircumstance = circ;
   const map = await loadFragmentMap();
   const subData = map[currentSystem] && map[currentSystem][circ];
 
-  // Helper to navigate to detail page given a mapped path or fallback params
+  // helper to navigate to detail page (mappedPath or fallback params)
   function navigateToDetail({ mappedPath = null, title = '', fallback = {} } = {}) {
+    // include origin info so detail.html can go back nicely
+    const origin = { origin_system: currentSystem || '', origin_circ: currentCircumstance || '' };
     if (mappedPath) {
-      // mappedPath example: "absolute/signal-failure/home-signal.html"
-      window.location.href = `detail.html?fragment=${encodeURIComponent(mappedPath)}&title=${encodeURIComponent(title || circ)}`;
+      const qs = new URLSearchParams({ fragment: mappedPath, title: title || circ, ...origin });
+      window.location.href = `detail.html?${qs.toString()}`;
     } else {
       const qs = new URLSearchParams({
         system: fallback.system || currentSystem || '',
         circ: fallback.circ || circ || '',
-        sub: fallback.sub || ''
+        sub: fallback.sub || '',
+        ...origin
       });
       window.location.href = `detail.html?${qs.toString()}`;
     }
   }
 
-  // Direct fragment (string) -> navigate to detail page
+  // If subData is a direct fragment string or a known direct case
   if (typeof subData === 'string' || circ === "TIC on Single Line") {
     openedFromSubmenu = false;
     const mapped = resolveMapPath(map, [currentSystem, circ]);
     if (mapped && typeof mapped === 'string') {
       navigateToDetail({ mappedPath: mapped, title: circ });
     } else {
-      // fallback: pass system & circ so detail.html can try to resolve
-      navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ: circ } });
+      navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ } });
     }
     return;
   }
 
-  // If subData is not an object (or missing) -> fallback to navigate by system/circ
+  // If subData is missing or not an object -> fallback
   if (!subData || typeof subData !== "object") {
     openedFromSubmenu = false;
     const mapped = resolveMapPath(map, [currentSystem, circ]);
     if (mapped && typeof mapped === 'string') {
       navigateToDetail({ mappedPath: mapped, title: circ });
     } else {
-      navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ: circ } });
+      navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ } });
     }
     return;
   }
 
-  // subData is an object -> build submenu grid which will navigate on click
+  // subData is an object -> build submenu grid
   const subMenu = el("subMenuGrid");
   clearChildren(subMenu);
 
@@ -195,7 +201,6 @@ async function showSubMenu(circ){
     div.setAttribute("data-key", sub);
     div.textContent = sub;
 
-    // click handler: resolve mapping for this specific submenu and navigate
     div.onclick = async () => {
       openedFromSubmenu = true;
       try {
@@ -203,55 +208,14 @@ async function showSubMenu(circ){
         if (mapped && typeof mapped === 'string') {
           navigateToDetail({ mappedPath: mapped, title: sub });
         } else {
-          // fallback to passing system/circ/sub
-          navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ: circ, sub: sub } });
+          navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ, sub } });
         }
       } catch (err) {
         console.error('Error resolving fragment mapping:', err);
-        navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ: circ, sub: sub } });
+        navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ, sub } });
       }
     };
-async function showSubMenu(circ){
-  currentCircumstance = circ;
-  const map = await loadFragmentMap();
-  const subData = map[currentSystem] && map[currentSystem][circ];
 
-  // helper navigate (re-uses loadFragmentFor but ensures origin params are present)
-  async function navigateKeyPath(kp) {
-    // call loadFragmentFor which will add origin params automatically
-    loadFragmentFor(kp);
-  }
-
-  // direct fragment (string) -> navigate to detail page
-  if (typeof subData === 'string' || circ === "TIC on Single Line") {
-    openedFromSubmenu = false;
-    navigateKeyPath([currentSystem, circ]);
-    return;
-  }
-
-  // fallback -> navigate
-  if (!subData || typeof subData !== "object") {
-    openedFromSubmenu = false;
-    navigateKeyPath([currentSystem, circ]);
-    return;
-  }
-
-  // subData is object -> build submenu grid which will navigate on click
-  const subMenu = el("subMenuGrid");
-  clearChildren(subMenu);
-
-  Object.keys(subData).forEach(sub => {
-    const div = document.createElement("div");
-    div.className = "grid-item";
-    div.tabIndex = 0;
-    div.role = "listitem";
-    div.setAttribute("data-key", sub);
-    div.textContent = sub;
-
-    div.onclick = () => {
-      openedFromSubmenu = true;
-      navigateKeyPath([currentSystem, circ, sub]);
-    };
     div.onkeydown = (e) => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); div.click(); }
       if (e.key === "Home") { e.preventDefault(); subMenu.querySelector('.grid-item')?.focus(); }
@@ -267,22 +231,24 @@ async function showSubMenu(circ){
   el("systemMain").scrollTop = 0;
   setTimeout(()=> subMenu.querySelector('.grid-item')?.focus(),80);
 }
+
 /**
- * Replacement loadFragmentFor: when navigating to detail page it now includes origin params
- * so detail.html can navigate back or reopen the right system view.
+ * loadFragmentFor(keyPath, opts)
+ * - default behavior: navigate to detail.html (and include origin info)
+ * - opts.inline = true => render inline in the authority card
  */
 async function loadFragmentFor(keyPath, opts = {}) {
   if (!Array.isArray(keyPath)) keyPath = String(keyPath).split('>').map(s => s.trim());
   const map = await loadFragmentMap();
   const mapped = resolveMapPath(map, keyPath);
 
-  // Build origin params (if available in current UI)
+  // Build origin params for detail page so user can navigate back
   const originParams = {};
   if (currentSystem) originParams.origin_system = currentSystem;
   if (currentCircumstance) originParams.origin_circ = currentCircumstance;
-  // If there is a submenu selected, try to include it
   if (keyPath.length >= 3) originParams.origin_sub = keyPath[2];
 
+  // no mapped fragment => fallback to detail with system/circ/sub
   if (!mapped || typeof mapped !== 'string') {
     if (opts.inline) {
       showFallbackMessage(keyPath);
@@ -299,7 +265,7 @@ async function loadFragmentFor(keyPath, opts = {}) {
     }
   }
 
-  // inline rendering (legacy)
+  // inline render if requested
   if (opts.inline) {
     const fullPath = './fragments/' + mapped;
     try {
@@ -321,14 +287,8 @@ async function loadFragmentFor(keyPath, opts = {}) {
     }
   }
 
-  // Default - navigate to detail page and include fragment + origin params
-  const fragmentParam = encodeURIComponent(mapped);
-  const titleParam = encodeURIComponent(keyPath[keyPath.length - 1] || '');
-  const qs = new URLSearchParams({
-    fragment: mapped,
-    title: keyPath[keyPath.length - 1] || '',
-    ...originParams
-  });
+  // default: navigate to detail page with fragment + origin info
+  const qs = new URLSearchParams({ fragment: mapped, title: keyPath[keyPath.length - 1] || '', ...originParams });
   window.location.href = `detail.html?${qs.toString()}`;
 }
 
@@ -402,6 +362,34 @@ document.addEventListener('keydown', (e)=> { if (e.key === "Escape") goBack(); }
 
 /* initial focus */
 window.addEventListener('load', ()=> setTimeout(()=> document.querySelector('#selectionPage .block')?.focus(), 100));
+
+/* On load: auto-open system/circ if query params present (helps returning from detail.html) */
+window.addEventListener('load', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const s = params.get('system') || params.get('origin_system');
+  const c = params.get('circ') || params.get('origin_circ');
+  const sub = params.get('sub') || params.get('origin_sub');
+  if (s) {
+    // open system
+    selectSystem(s);
+    // wait for UI render and map load
+    setTimeout(() => {
+      if (c) {
+        showSubMenu(c);
+        if (sub) {
+          // try to trigger the submenu click
+          setTimeout(() => {
+            const subGrid = document.getElementById('subMenuGrid');
+            if (subGrid) {
+              const node = Array.from(subGrid.querySelectorAll('.grid-item')).find(elm => elm.textContent.trim() === sub);
+              if (node) node.click();
+            }
+          }, 220);
+        }
+      }
+    }, 220);
+  }
+});
 </script>
 </body>
-  </html>
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Block Working System (Fragments Demo)</title>
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+:root{
+  --header-height: 88px;
+  --accent-blue: #1976d2;
+  --accent-green: #388e3c;
+  --focus-ring: 3px solid rgba(25,118,210,0.24);
+}
+html,body { height:100%; margin:0; font-family:Arial, sans-serif; background:#f9f9f9; overflow:hidden; }
+header { height:var(--header-height); background:linear-gradient(90deg,var(--accent-blue),var(--accent-green)); padding:20px 15px; position:sticky; top:0; z-index:100; box-shadow:0 4px 8px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; }
+#mainHeading { font-size:2.0rem; color:white; margin:0; letter-spacing:1px; text-align:center; }
+.back-btn { position:absolute; left:14px; bottom:12px; font-size:1.25rem; cursor:pointer; color:white; background:var(--accent-blue); border:none; border-radius:50%; width:40px; height:40px; display:none; align-items:center; justify-content:center; box-shadow:0 4px 0 #1565c0, 0 4px 10px rgba(0,0,0,0.25); transition:transform .18s, box-shadow .18s; }
+.back-btn:hover { transform:translateY(-2px); }
+.app { display:flex; flex-direction:column; height:calc(100% - var(--header-height)); }
+#selectionPage { padding:18px; overflow-y:auto; flex:1 1 auto; }
+#systemPage { display:none; flex-direction:column; height:100%; }
+.subheader { display:flex; align-items:center; justify-content:center; background:#fff; padding:12px 20px; border-bottom:2px solid #ddd; position:sticky; top:var(--header-height); z-index:99; }
+#systemTitle { font-size:1.4rem; color:#333; margin:0; text-align:center; }
+#systemMain { flex:1 1 auto; overflow-y:auto; padding:20px; outline:none; }
+.block-container { display:flex; justify-content:center; gap:20px; margin-top:30px; flex-wrap:wrap; }
+.block { flex:1 1 200px; max-width:300px; height:150px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:700; color:white; border-radius:12px; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.2); transition:transform .22s ease, opacity .22s; text-align:center; }
+.block.abs { background:var(--accent-blue); }
+.block.auto { background:var(--accent-green); }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:20px; margin:20px auto; max-width:980px; }
+.grid-item { background:white; border-radius:10px; padding:20px; box-shadow:0 4px 10px rgba(0,0,0,0.08); font-size:1.05rem; font-weight:700; cursor:pointer; transition:transform .18s, background .18s; text-align:center; line-height:1.25; user-select:none; }
+.grid-item:hover { background:var(--accent-blue); color:white; transform:translateY(-4px) scale(1.02); }
+.card { display:none; max-width:900px; margin:20px auto; background:white; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.14); overflow:hidden; animation:fadeIn .35s; }
+#authorityCard { display:none; max-width:900px; margin:20px auto; background:#fff; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.15); height:auto; max-height:75vh; display:flex; flex-direction:column; overflow:hidden; }
+#authorityCard .sub-heading { position:sticky; top:0; background:#f4f8fb; color:#222; font-size:18px; font-weight:700; text-align:center; padding:12px; border-bottom:1px solid #e6eef6; z-index:2; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+#authorityCard .card-body { flex:1 1 auto; overflow-y:auto; padding:18px 22px; font-size:15px; line-height:1.6; max-height:calc(75vh - 64px); outline:none; }
+.card-close { background:transparent; border:none; font-size:0.95rem; color:#444; cursor:pointer; padding:6px 8px; border-radius:8px; }
+@keyframes fadeIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+@media (max-width:520px) { #mainHeading{font-size:1.6rem;} #systemTitle{font-size:1.15rem;} .block{height:120px;font-size:1rem;} .grid-item{padding:14px;font-size:0.98rem;} .back-btn{width:36px;height:36px;font-size:1.1rem;} }
+</style>
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="goBack()" aria-label="Go back" id="backBtn" aria-hidden="true"><i class="fas fa-arrow-left" aria-hidden="true"></i></button>
+  <h1 id="mainHeading">AUTHORITIES</h1>
+</header>
+
+<div class="app" role="application">
+  <div id="selectionPage" role="main" aria-label="System selection">
+    <div class="block-container" role="list" aria-label="Systems list">
+      <div class="block abs" tabindex="0" role="listitem" onclick="selectSystem('Absolute Block System', this)" onkeydown="if(event.key==='Enter' || event.key===' '){ event.preventDefault(); selectSystem('Absolute Block System', this);}">Absolute Block System</div>
+      <div class="block auto" tabindex="0" role="listitem" onclick="selectSystem('Automatic Block Section', this)" onkeydown="if(event.key==='Enter' || event.key===' '){ event.preventDefault(); selectSystem('Automatic Block Section', this);}">Automatic Block Section</div>
+    </div>
+  </div>
+
+  <div id="systemPage" aria-hidden="true">
+    <div class="subheader"><h2 id="systemTitle"></h2></div>
+    <main id="systemMain" tabindex="0" role="region" aria-label="System content">
+      <div id="circumstancesGrid" class="grid" aria-label="Circumstances list" role="list"></div>
+      <div id="subMenuGrid" class="grid" aria-label="Submenu list" role="list" style="display:none;"></div>
+      <div id="authorityCard" class="card" role="dialog" aria-label="Authority details" aria-modal="true" style="display:none;"></div>
+    </main>
+  </div>
+</div>
+
+<!-- DOMPurify -->
+<script src="https://unpkg.com/dompurify@2.4.0/dist/purify.min.js"></script>
+
+<script>
+/* ---------- Lightweight mapping + UI glue ---------- */
+
+let currentSystem = "";
+let currentCircumstance = "";
+let openedFromSubmenu = false;
+let lastFocusedElement = null;
+let fragmentMap = null;
+
+/* helper */
+function el(id){ return document.getElementById(id); }
+function clearChildren(node){ while(node && node.firstChild) node.removeChild(node.firstChild); }
+
+/* load map.json */
+async function loadFragmentMap() {
+  if (fragmentMap) return fragmentMap;
+  try {
+    const res = await fetch('./fragments/map.json', {cache:'no-cache'});
+    if (!res.ok) throw new Error('map.json not found: ' + res.status);
+    fragmentMap = await res.json();
+    return fragmentMap;
+  } catch (err) {
+    console.error('Could not load fragment map:', err);
+    fragmentMap = {};
+    return fragmentMap;
+  }
+}
+function resolveMapPath(map, keyPath) {
+  let node = map;
+  for (const key of keyPath) {
+    if (node && typeof node === 'object' && key in node) node = node[key];
+    else return null;
+  }
+  return node;
+}
+
+/* Load circumstances for selected system */
+async function loadCircumstances(){
+  const grid = el("circumstancesGrid");
+  clearChildren(grid);
+  const map = await loadFragmentMap();
+  const systemMap = map[currentSystem] || {};
+  Object.keys(systemMap).forEach(circ => {
+    const div = document.createElement("div");
+    div.className = "grid-item";
+    div.tabIndex = 0;
+    div.role = "listitem";
+    div.setAttribute("data-key", circ);
+    div.textContent = circ;
+    div.onclick = () => showSubMenu(circ);
+    div.onkeydown = (e) => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); showSubMenu(circ);} if(e.key==='Home'){ e.preventDefault(); grid.querySelector('.grid-item')?.focus(); } if(e.key==='End'){ e.preventDefault(); grid.querySelector('.grid-item:last-child')?.focus(); } };
+    grid.appendChild(div);
+  });
+  grid.style.display = "grid";
+  el("subMenuGrid").style.display = "none";
+  el("authorityCard").style.display = "none";
+  el("systemMain").scrollTop = 0;
+  setTimeout(()=> grid.querySelector('.grid-item')?.focus(),80);
+}
+
+/* Show submenus for a circumstance (or open fragment directly) */
+async function showSubMenu(circ){
+  currentCircumstance = circ;
+  const map = await loadFragmentMap();
+  const subData = map[currentSystem] && map[currentSystem][circ];
+
+  // direct fragment (string) -> load it
+  if (typeof subData === 'string' || circ === "TIC on Single Line") {
+    openedFromSubmenu = false;
+    loadFragmentFor([currentSystem, circ]);
+    return;
+  }
+
+  // if subData is an object -> show submenu buttons
+  const subMenu = el("subMenuGrid");
+  clearChildren(subMenu);
+
+  if (!subData || typeof subData !== "object") {
+    openedFromSubmenu = false;
+    loadFragmentFor([currentSystem, circ]);
+    return;
+  }
+
+  Object.keys(subData).forEach(sub => {
+    const div = document.createElement("div");
+    div.className = "grid-item";
+    div.tabIndex = 0;
+    div.role = "listitem";
+    div.setAttribute("data-key", sub);
+    div.textContent = sub;
+    div.onclick = () => { openedFromSubmenu = true; loadFragmentFor([currentSystem, circ, sub]); };
+    div.onkeydown = (e) => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); openedFromSubmenu = true; loadFragmentFor([currentSystem, circ, sub]); } };
+    subMenu.appendChild(div);
+  });
+
+  el("circumstancesGrid").style.display = "none";
+  subMenu.style.display = "grid";
+  el("authorityCard").style.display = "none";
+  el("systemMain").scrollTop = 0;
+  setTimeout(()=> subMenu.querySelector('.grid-item')?.focus(),80);
+}
+
+/* Fragment loader - resolves mapping and fetches fragment file */
+async function loadFragmentFor(keyPath) {
+  if (!Array.isArray(keyPath)) keyPath = String(keyPath).split('>').map(s=>s.trim());
+  const map = await loadFragmentMap();
+  const mapped = resolveMapPath(map, keyPath);
+  if (!mapped) {
+    showFallbackMessage(keyPath);
+    return;
+  }
+
+  // if the map entry is an object (not expected here), fallback
+  if (typeof mapped !== 'string') {
+    showFallbackMessage(keyPath);
+    return;
+  }
+
+  const fullPath = './fragments/' + mapped;
+  try {
+    const res = await fetch(fullPath, {cache:'no-cache'});
+    if (!res.ok) throw new Error('Fragment not found: ' + res.status);
+    const html = await res.text();
+    const safe = DOMPurify.sanitize(html, {ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tbody','tr','td'], ALLOWED_ATTR: ['class','id']});
+    const card = el("authorityCard");
+    card.innerHTML = `<div class="sub-heading"><span style="flex:1;text-align:center;">${escapeHtml(keyPath[keyPath.length-1])}</span><div><button id="cardCloseBtn" class="card-close" aria-label="Close details">Close <i class="fas fa-times" aria-hidden="true"></i></button></div></div><div class="card-body">${safe}</div>`;
+    card.style.display = "flex";
+    card.setAttribute("aria-hidden","false");
+    const closeBtn = card.querySelector('#cardCloseBtn');
+    if (closeBtn) closeBtn.addEventListener('click', () => goBack());
+  } catch (err) {
+    console.error('Error loading fragment:', err);
+    showFallbackMessage(keyPath, err);
+  }
+}
+
+function showFallbackMessage(keyPath, err) {
+  const card = el("authorityCard");
+  card.innerHTML = `<div class="sub-heading">${escapeHtml(keyPath[keyPath.length-1]||'Details')}</div><div class="card-body"><p>No content available for <strong>${escapeHtml(keyPath.join(' > '))}</strong>.</p><p style="color:#666">${escapeHtml(err?err.message:'')}</p></div>`;
+  card.style.display = "flex";
+  card.setAttribute("aria-hidden","false");
+}
+
+/* Select system */
+function selectSystem(system, triggerEl){
+  currentSystem = system;
+  el("selectionPage").style.display = "none";
+  el("systemPage").style.display = "block";
+  el("systemTitle").textContent = system;
+  document.querySelector('.back-btn').style.display = 'flex';
+  document.querySelector('.back-btn').setAttribute('aria-hidden','false');
+  lastFocusedElement = triggerEl || document.activeElement;
+  loadCircumstances();
+  el("systemMain").scrollTop = 0;
+}
+
+/* Go back logic */
+function goBack(){
+  const card = el("authorityCard");
+  const subMenu = el("subMenuGrid");
+  const grid = el("circumstancesGrid");
+
+  if (card && card.style.display && card.style.display !== "none"){
+    card.style.display = "none";
+    card.setAttribute("aria-hidden","true");
+    if (openedFromSubmenu) {
+      subMenu.style.display = "grid";
+      setTimeout(()=> subMenu.querySelector('.grid-item')?.focus(), 80);
+    } else {
+      grid.style.display = "grid";
+      setTimeout(()=> grid.querySelector('.grid-item')?.focus(), 80);
+    }
+    return;
+  }
+
+  if (subMenu && subMenu.style.display === "grid"){
+    subMenu.style.display = "none";
+    grid.style.display = "grid";
+    setTimeout(()=> grid.querySelector('.grid-item')?.focus(), 80);
+    return;
+  }
+
+  if (grid && grid.style.display === "grid"){
+    grid.style.display = "none";
+    el("systemPage").style.display = "none";
+    el("selectionPage").style.display = "block";
+    document.querySelector('.back-btn').style.display = 'none';
+    document.querySelector('.back-btn').setAttribute('aria-hidden','true');
+    currentSystem = "";
+    currentCircumstance = "";
+    setTimeout(()=> {
+      if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') lastFocusedElement.focus();
+      else el("selectionPage").querySelector('.block')?.focus();
+    }, 80);
+    return;
+  }
+}
+
+/* escapeHtml helper */
+function escapeHtml(str){ if (str == null) return ""; return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+/* keyboard: Escape -> goBack */
+document.addEventListener('keydown', (e)=> { if (e.key === "Escape") goBack(); });
+
+/* initial focus */
+window.addEventListener('load', ()=> setTimeout(()=> document.querySelector('#selectionPage .block')?.focus(), 100));
+</script>
+</body>
+  </html>

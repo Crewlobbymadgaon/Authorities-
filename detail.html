@@ -3,101 +3,229 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>AUTHORITIES</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <title>AUTHORITIES — Details</title>
+
+  <!-- DOMPurify (for safe fragment rendering) -->
+  <script src="https://unpkg.com/dompurify@2.4.0/dist/purify.min.js" defer></script>
+
   <style>
-    :root{ --accent-blue:#1976d2; --accent-green:#388e3c; --max-width:900px; --muted:#6b7280; }
+    :root{
+      --accent-blue: #1976d2;
+      --accent-green: #388e3c;
+      --bg: #f6f8fb;
+      --card-bg: #ffffff;
+      --muted: #5b6b74;
+      --max-w: 920px;
+      --radius: 12px;
+      --gap: 16px;
+    }
+
     *{box-sizing:border-box}
-    body{ margin:0; font-family:Arial, sans-serif; background:#f6f8fb; color:#102a43; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
-    header{ height:88px; display:flex; align-items:center; justify-content:center; background:linear-gradient(90deg,var(--accent-blue),var(--accent-green)); color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.12); }
-    header h1{ margin:0; font-size:1.4rem; letter-spacing:1px; }
-    main{ max-width:var(--max-width); margin:28px auto; padding:0 16px; }
-    .card{ background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(8,30,50,0.06); overflow:hidden; }
-    .card-header{ padding:20px; border-bottom:1px solid #eef4fb; display:flex; align-items:center; gap:12px; }
-    .card-header h2{ margin:0; font-size:1.15rem; color:#0b2540; }
-    .card-body{ padding:20px; line-height:1.65; font-size:15px; color:#123; }
-    .no-data{ padding:28px; text-align:center; color:#9aa5b1; font-style:italic; }
-    @media (max-width:520px){ main{ margin:14px 10px; } .card-header{ padding:14px } .card-body{ padding:14px } }
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#0b1b2b; -webkit-font-smoothing:antialiased;}
+    header {
+      height:88px;
+      background: linear-gradient(90deg,var(--accent-blue),var(--accent-green));
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:0 16px;
+      box-shadow: 0 6px 18px rgba(8,30,50,0.08);
+    }
+    .back-btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 0;
+      padding:10px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+      text-decoration:none;
+    }
+    .brand { flex:1; text-align:center; color:#fff; font-weight:700; font-size:1.05rem; letter-spacing:1px; }
+    /* Container to center card */
+    main { display:flex; justify-content:center; padding:20px; }
+    .card-wrap { width:100%; max-width:var(--max-w); padding:0 12px; }
+    .card {
+      background:var(--card-bg);
+      border-radius:var(--radius);
+      box-shadow: 0 18px 50px rgba(8,30,50,0.08);
+      overflow:hidden;
+      margin: 12px 0;
+    }
+
+    /* Card header area: system name + optional subheading */
+    .card-head {
+      padding:22px;
+      border-bottom:1px solid #eef6fb;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      align-items:center;
+      text-align:center;
+    }
+    .system-name { font-size:1.25rem; font-weight:800; color:#0b2540; margin:0; }
+    .subheading { font-size:1rem; color:var(--muted); margin:0; font-weight:700; }
+
+    .card-body {
+      padding:20px;
+      line-height:1.7;
+      font-size:15px;
+      color:#122;
+    }
+
+    /* Nice typographic styles inside fragment content */
+    .card-body h1, .card-body h2, .card-body h3 { color:#0b2540; margin-top:0; }
+    .card-body ul { padding-left:20px; margin:10px 0; }
+    .card-body p { margin:10px 0; }
+
+    /* Minimal mobile tweaks */
+    @media (max-width:640px) {
+      .system-name { font-size:1.05rem; }
+      .subheading { font-size:0.95rem; }
+      .card-head { padding:16px; }
+      .card-body { padding:16px; font-size:15px; }
+      .back-btn { padding:8px 10px; }
+    }
   </style>
 </head>
 <body>
   <header role="banner" aria-label="Header">
-    <h1>AUTHORITIES</h1>
+    <button id="backBtn" class="back-btn" aria-label="Go back"><span aria-hidden="true">←</span><span style="display:none">Back</span></button>
+    <div class="brand" aria-hidden="true">AUTHORITIES</div>
+    <!-- empty slot (keeps header centered) -->
+    <div style="width:56px" aria-hidden="true"></div>
   </header>
 
-  <main role="main" aria-live="polite">
-    <div class="card" id="card">
-      <div class="card-header">
-        <h2 id="title">Loading…</h2>
-      </div>
-      <article id="fragmentContainer" class="card-body">
-        <div class="no-data">Loading content…</div>
-      </article>
+  <main>
+    <div class="card-wrap">
+      <section class="card" role="main" aria-labelledby="systemHeading">
+        <div class="card-head">
+          <h1 id="systemHeading" class="system-name">Loading…</h1>
+          <h2 id="subHeading" class="subheading" style="display:none;"></h2>
+        </div>
+
+        <div id="cardBody" class="card-body" aria-live="polite">
+          <p style="color:var(--muted); margin:0">Loading content…</p>
+        </div>
+      </section>
     </div>
   </main>
 
-  <script src="https://unpkg.com/dompurify@2.4.0/dist/purify.min.js"></script>
   <script>
-    function qs(name){ return new URLSearchParams(window.location.search).get(name); }
-    function escapeHtml(s){ if (s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  // parse query params helper
+  function qs(name){ return new URLSearchParams(location.search).get(name); }
+  function escapeHtml(s){ if (s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    (async function(){
-      const fragmentParam = qs('fragment');
-      const titleParam = qs('title');
-      const titleEl = document.getElementById('title');
-      const container = document.getElementById('fragmentContainer');
+  // back behavior: try history.back(), fallback to index with origin params
+  document.getElementById('backBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    try { history.back(); } catch(e){}
+    // fallback after short delay if location didn't change
+    setTimeout(() => {
+      // still on detail page -> navigate back to index with origin params if provided
+      if (location.pathname.endsWith('detail.html')) {
+        const origin_system = qs('origin_system') || qs('system') || '';
+        const origin_circ = qs('origin_circ') || qs('circ') || '';
+        const origin_sub = qs('origin_sub') || qs('sub') || '';
+        const qsObj = new URLSearchParams();
+        if (origin_system) qsObj.set('system', origin_system);
+        if (origin_circ) qsObj.set('circ', origin_circ);
+        if (origin_sub) qsObj.set('sub', origin_sub);
+        const href = 'index.html' + (qsObj.toString() ? ('?' + qsObj.toString()) : '');
+        location.href = href;
+      }
+    }, 220);
+  });
 
-      // If fragment passed, load it and render sanitized HTML
-      if (fragmentParam) {
-        titleEl.textContent = titleParam || fragmentParam.split('/').pop();
-        try {
-          const res = await fetch('./fragments/' + fragmentParam, {cache:'no-cache'});
-          if (!res.ok) throw new Error('Not found: ' + res.status);
-          const html = await res.text();
-          container.innerHTML = DOMPurify.sanitize(html, {
+  // Load fragment (or fallback mapping)
+  (async function(){
+    const fragment = qs('fragment');
+    const title = qs('title') || '';
+    const origin_system = qs('origin_system') || qs('system') || '';
+    const origin_circ = qs('origin_circ') || qs('circ') || '';
+    const origin_sub = qs('origin_sub') || qs('sub') || '';
+
+    // Set system heading (prefer origin_system, else first part of fragment path)
+    const systemHeadingEl = document.getElementById('systemHeading');
+    const subHeadingEl = document.getElementById('subHeading');
+    if (origin_system) {
+      systemHeadingEl.textContent = origin_system;
+    } else {
+      // guess from fragment path (first folder)
+      if (fragment && fragment.includes('/')) {
+        const first = fragment.split('/')[0];
+        // humanize: replace hyphens with spaces and title-case
+        const pretty = first.replace(/[-_]/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
+        systemHeadingEl.textContent = pretty;
+      } else {
+        systemHeadingEl.textContent = 'Authorities';
+      }
+    }
+
+    // Subheading — priority: title param > origin_sub > origin_circ
+    const chosenSub = title || origin_sub || origin_circ || '';
+    if (chosenSub) {
+      subHeadingEl.style.display = 'block';
+      subHeadingEl.textContent = chosenSub;
+    } else {
+      subHeadingEl.style.display = 'none';
+    }
+
+    const cardBody = document.getElementById('cardBody');
+
+    // helper to load and sanitize
+    async function loadAndRender(path) {
+      try {
+        const res = await fetch('./fragments/' + path, {cache:'no-cache'});
+        if (!res.ok) throw new Error('Not found: ' + res.status);
+        const html = await res.text();
+        // Wait for DOMPurify script; if loaded, use it; else fallback to text
+        if (window.DOMPurify && typeof window.DOMPurify.sanitize === 'function') {
+          cardBody.innerHTML = DOMPurify.sanitize(html, {
             ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tr','td'],
             ALLOWED_ATTR: ['class','id']
           });
-          return;
-        } catch (err) {
-          container.innerHTML = '<div class="no-data">Could not load content: ' + escapeHtml(err.message) + '</div>';
+        } else {
+          // last resort: escape (shows raw)
+          cardBody.textContent = html;
+        }
+      } catch (err) {
+        cardBody.innerHTML = '<p style="color:#8a99a6">Could not load content: ' + escapeHtml(err.message) + '</p>';
+      }
+    }
+
+    if (fragment) {
+      await loadAndRender(fragment);
+      return;
+    }
+
+    // fallback: map.json resolution using system/circ/sub
+    const system = qs('system') || origin_system;
+    const circ = qs('circ') || origin_circ;
+    const sub = qs('sub') || origin_sub;
+    if (system && circ) {
+      try {
+        const mres = await fetch('./fragments/map.json', {cache:'no-cache'});
+        if (!mres.ok) throw new Error('map.json missing: ' + mres.status);
+        const map = await mres.json();
+        let mapped = null;
+        if (sub && map[system] && typeof map[system][circ] === 'object') mapped = map[system][circ][sub];
+        else if (map[system] && typeof map[system][circ] === 'string') mapped = map[system][circ];
+        if (mapped) {
+          await loadAndRender(mapped);
           return;
         }
+      } catch (err) {
+        console.error(err);
       }
+    }
 
-      // fallback: try simple system/circ/sub resolution via map.json
-      const system = qs('system');
-      const circ = qs('circ');
-      const sub = qs('sub');
-      if (system && circ) {
-        try {
-          const mapRes = await fetch('./fragments/map.json', {cache:'no-cache'});
-          if (mapRes.ok) {
-            const map = await mapRes.json();
-            let mapped = null;
-            if (sub && map[system] && map[system][circ] && typeof map[system][circ] === 'object') {
-              mapped = map[system][circ][sub];
-            } else if (map[system] && map[system][circ] && typeof map[system][circ] === 'string') {
-              mapped = map[system][circ];
-            }
-            if (mapped) {
-              titleEl.textContent = titleParam || (sub || circ);
-              const res = await fetch('./fragments/' + mapped, {cache:'no-cache'});
-              if (!res.ok) throw new Error('Not found: ' + res.status);
-              const html = await res.text();
-              container.innerHTML = DOMPurify.sanitize(html, {ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br'], ALLOWED_ATTR:['class','id']});
-              return;
-            }
-          }
-        } catch (err) {
-          console.error(err);
-        }
-      }
-
-      // final fallback
-      titleEl.textContent = titleParam || 'Details';
-      container.innerHTML = '<div class="no-data">No content available.</div>';
-    })();
+    // last fallback
+    cardBody.innerHTML = '<p style="color:#8a99a6">No content available for this selection.</p>';
+  })();
   </script>
 </body>
 </html>

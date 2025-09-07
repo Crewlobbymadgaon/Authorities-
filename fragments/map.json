@@ -1,0 +1,37 @@
+{
+  "Absolute Block System": {
+    "Normal Authority to Proceed": "absolute/normal.html",
+    "Signal Failure": {
+      "Block Instrument/Advance Starter": "absolute/signal-failure/block-instrument.html",
+      "Home Signal": "absolute/signal-failure/home-signal.html",
+      "Starter Signal": "absolute/signal-failure/starter-signal.html",
+      "Shunt Signal": "absolute/signal-failure/shunt-signal.html",
+      "Shunting Permitted Indicator (SPI)": "absolute/signal-failure/spi.html"
+    },
+    "Other Occassions": {
+      "Reception on Non-Signalled Line": "absolute/other-occasions/reception-nonsignalled.html",
+      "Reception on Obstructed Road": "absolute/other-occasions/reception-obstructed.html",
+      "To Start from Non-Signalled Line": "absolute/other-occasions/start-from-nonsignalled.html",
+      "Starting from Non-Signalled Line when LSS failed": "absolute/other-occasions/starting-when-lss-failed.html",
+      "Despatch from a line having Common Starter": "absolute/other-occasions/dispatch-common-starter.html",
+      "For sending relief engine/train in Obstructed Block Section": "absolute/other-occasions/relief-engine-obstructed.html",
+      "To start the front portion of a Goods Train from Mid-Section": "absolute/other-occasions/start-front-goods-midsection.html",
+      "To send relief engine to clear rear portion (if front portion comes with T/609)": "absolute/other-occasions/send-relief-to-clear-rear.html"
+    },
+    "Shunting": "absolute/shunting.html",
+    "Engine Pushing": "absolute/engine-pushing.html",
+    "TSL working": {
+      "TSL working - Right Direction": "absolute/tsl-right.html",
+      "TSL working - Wrong Direction": "absolute/tsl-wrong.html"
+    },
+    "TIC on Single Line": "absolute/tic-single.html",
+    "TIC on Double Line": "absolute/tic-double.html"
+  },
+
+  "Automatic Block Section": {
+    "Signal Failure": {
+      "Failure of Automatic Signal/Signals between Stations": "automatic/signal-failure.html"
+    },
+    "Train Passing": "automatic/train-passing.html"
+  }
+}

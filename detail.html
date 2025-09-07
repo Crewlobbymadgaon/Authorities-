@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Authority — Details</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root { --accent-blue:#1976d2; --accent-green:#388e3c; --max-width:900px; }
+    body { margin:0; font-family:Arial, sans-serif; background:#f6f8fb; color:#222; }
+    header { background:linear-gradient(90deg,var(--accent-blue),var(--accent-green)); color:#fff; padding:14px 18px; display:flex; align-items:center; gap:12px; }
+    .back { background:transparent; border:1px solid rgba(255,255,255,0.15); color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; text-decoration:none; }
+    .container { max-width:var(--max-width); margin:18px auto; background:#fff; border-radius:12px; box-shadow:0 8px 30px rgba(8,30,50,0.08); overflow:hidden; }
+    .heading { padding:16px 20px; border-bottom:1px solid #eef5fb; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .heading h1 { margin:0; font-size:1.25rem; }
+    .content { padding:18px 22px; line-height:1.6; font-size:15px; }
+    .content h3, .content h4 { color:#1f2d3d; margin-top:0; }
+    .meta { font-size:13px; color:#666; margin-bottom:6px; }
+    .footer { padding:12px 18px; text-align:right; color:#666; font-size:13px; }
+    @media (max-width:520px){ .container{ margin:12px; } .heading h1{ font-size:1.0rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <a id="backLink" class="back" href="index.html"><i class="fas fa-arrow-left"></i> Back</a>
+    <div style="flex:1;">
+      <strong id="pageTitle">Authority Details</strong>
+    </div>
+  </header>
+
+  <main class="container" role="main" aria-live="polite">
+    <div class="heading">
+      <h1 id="title">Loading…</h1>
+      <div class="meta" id="meta"></div>
+    </div>
+    <article id="fragmentContainer" class="content">Loading content…</article>
+    <div class="footer">Loaded from fragments.</div>
+  </main>
+
+  <script src="https://unpkg.com/dompurify@2.4.0/dist/purify.min.js"></script>
+  <script>
+    // helpers
+    function qs(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+    function escapeHtml(s){ if (s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    (async function() {
+      const fragmentParam = qs('fragment'); // e.g. absolute/tsl-right.html
+      const titleParam = qs('title');
+      const system = qs('system');
+      const circ = qs('circ');
+      const sub = qs('sub');
+
+      const titleEl = document.getElementById('title');
+      const metaEl = document.getElementById('meta');
+      const container = document.getElementById('fragmentContainer');
+
+      // if fragment provided directly -> load it
+      if (fragmentParam) {
+        const fragPath = './fragments/' + fragmentParam;
+        titleEl.textContent = titleParam || fragmentParam.split('/').pop();
+        metaEl.textContent = fragmentParam;
+        try {
+          const res = await fetch(fragPath, {cache:'no-cache'});
+          if (!res.ok) throw new Error('Not Found: ' + res.status);
+          const html = await res.text();
+          container.innerHTML = DOMPurify.sanitize(html, {ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tr','td'], ALLOWED_ATTR:['class','id']});
+          return;
+        } catch (err) {
+          container.innerHTML = '<p style="color:#b33">Could not load fragment: ' + escapeHtml(err.message) + '</p>';
+          return;
+        }
+      }
+
+      // fallback: try resolving via map.json using system/circ/sub query parameters
+      if (system && circ) {
+        try {
+          const mapRes = await fetch('./fragments/map.json', {cache:'no-cache'});
+          if (mapRes.ok) {
+            const map = await mapRes.json();
+            let mapped = null;
+            if (sub && map[system] && map[system][circ] && typeof map[system][circ] === 'object') {
+              mapped = map[system][circ][sub];
+            } else if (map[system] && map[system][circ] && typeof map[system][circ] === 'string') {
+              mapped = map[system][circ];
+            }
+            if (mapped) {
+              titleEl.textContent = titleParam || (sub || circ);
+              metaEl.textContent = mapped;
+              const res = await fetch('./fragments/' + mapped, {cache:'no-cache'});
+              if (!res.ok) throw new Error('Not found: ' + res.status);
+              const html = await res.text();
+              container.innerHTML = DOMPurify.sanitize(html, {ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br'], ALLOWED_ATTR:['class','id']});
+              return;
+            }
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      // if all fails
+      titleEl.textContent = 'Details';
+      metaEl.textContent = '';
+      container.innerHTML = '<p>No detail available for the selected item.</p>';
+    })();
+  </script>
+</body>
+</html>

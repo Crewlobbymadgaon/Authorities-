@@ -3,53 +3,37 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Authority — Details</title>
+  <title>AUTHORITIES</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
-    :root { --accent-blue:#1976d2; --accent-green:#388e3c; --max-width:980px; --muted:#6b7280; }
+    :root{ --accent-blue:#1976d2; --accent-green:#388e3c; --max-width:900px; --muted:#6b7280; }
     *{box-sizing:border-box}
-    body { margin:0; font-family:Inter,system-ui,Arial,sans-serif; background:linear-gradient(180deg,#f6f8fb, #fff); color:#102a43; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
-    .topbar { display:flex; align-items:center; gap:12px; padding:14px 18px; background:linear-gradient(90deg,var(--accent-blue),var(--accent-green)); color:#fff; box-shadow:0 6px 18px rgba(8,30,50,0.08); }
-    .topbar .brand { font-weight:700; font-size:1.05rem; letter-spacing:0.6px; }
-    .topbar .actions { margin-left:auto; display:flex; gap:8px; align-items:center;}
-    .btn { background:rgba(255,255,255,0.12); color:#fff; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; display:inline-flex; gap:8px; align-items:center; text-decoration:none; }
-    .btn:focus{outline:3px solid rgba(255,255,255,0.12);}
-    .container { max-width:var(--max-width); margin:22px auto; background:#fff; border-radius:12px; box-shadow:0 12px 30px rgba(8,30,50,0.06); overflow:hidden; }
-    .header { padding:18px 22px; border-bottom:1px solid #eef5fb; display:flex; gap:12px; align-items:center; }
-    .title { font-size:1.25rem; font-weight:700; margin:0; color:#0f1724; }
-    .meta { font-size:13px; color:var(--muted); margin-left:auto; text-align:right; }
-    .breadcrumb { font-size:13px; color:#475569; padding:10px 22px; background:#fbfdff; border-bottom:1px solid #f1f7fb; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .crumb { color:#2563eb; text-decoration:none; }
-    .content { padding:20px 24px; line-height:1.7; font-size:15px; color:#123; }
-    .content h3{ margin-top:0; color:#0b2540;}
-    .footer { padding:12px 18px; text-align:right; color:var(--muted); font-size:13px; background:#fbfdff; border-top:1px solid #f1f7fb; }
-    .no-data { padding:28px; text-align:center; color:#9aa5b1; font-style:italic; }
-    @media (max-width:640px){ .content{ padding:16px; } .header{ padding:14px } .breadcrumb{ padding:8px 14px } .container{ margin:12px } .title{ font-size:1.05rem } }
+    body{ margin:0; font-family:Arial, sans-serif; background:#f6f8fb; color:#102a43; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+    header{ height:88px; display:flex; align-items:center; justify-content:center; background:linear-gradient(90deg,var(--accent-blue),var(--accent-green)); color:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.12); }
+    header h1{ margin:0; font-size:1.4rem; letter-spacing:1px; }
+    main{ max-width:var(--max-width); margin:28px auto; padding:0 16px; }
+    .card{ background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(8,30,50,0.06); overflow:hidden; }
+    .card-header{ padding:20px; border-bottom:1px solid #eef4fb; display:flex; align-items:center; gap:12px; }
+    .card-header h2{ margin:0; font-size:1.15rem; color:#0b2540; }
+    .card-body{ padding:20px; line-height:1.65; font-size:15px; color:#123; }
+    .no-data{ padding:28px; text-align:center; color:#9aa5b1; font-style:italic; }
+    @media (max-width:520px){ main{ margin:14px 10px; } .card-header{ padding:14px } .card-body{ padding:14px } }
   </style>
 </head>
 <body>
-  <div class="topbar" role="banner">
-    <a id="backBtn" class="btn" href="#"><i class="fas fa-arrow-left"></i><span style="display:inline-block;">Back</span></a>
-    <div class="brand">Block Authorities</div>
-    <div class="actions">
-      <a id="printBtn" class="btn" href="#" title="Print"><i class="fas fa-print"></i> Print</a>
-      <a id="openFragmentBtn" class="btn" href="#" title="Open fragment file"><i class="fas fa-file-alt"></i> View Fragment</a>
+  <header role="banner" aria-label="Header">
+    <h1>AUTHORITIES</h1>
+  </header>
+
+  <main role="main" aria-live="polite">
+    <div class="card" id="card">
+      <div class="card-header">
+        <h2 id="title">Loading…</h2>
+      </div>
+      <article id="fragmentContainer" class="card-body">
+        <div class="no-data">Loading content…</div>
+      </article>
     </div>
-  </div>
-
-  <main class="container" role="main" aria-live="polite">
-    <div class="header">
-      <h1 id="title" class="title">Loading…</h1>
-      <div id="meta" class="meta">Loading…</div>
-    </div>
-
-    <nav id="breadcrumb" class="breadcrumb" aria-label="Breadcrumb" style="display:none;"></nav>
-
-    <article id="fragmentContainer" class="content">
-      <div class="no-data">Loading content…</div>
-    </article>
-
-    <div class="footer">Content served from <code>/fragments/</code></div>
   </main>
 
   <script src="https://unpkg.com/dompurify@2.4.0/dist/purify.min.js"></script>
@@ -57,91 +41,34 @@
     function qs(name){ return new URLSearchParams(window.location.search).get(name); }
     function escapeHtml(s){ if (s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    (async function() {
+    (async function(){
       const fragmentParam = qs('fragment');
       const titleParam = qs('title');
-      const origin_system = qs('origin_system');
-      const origin_circ = qs('origin_circ');
-      const origin_sub = qs('origin_sub');
-
       const titleEl = document.getElementById('title');
-      const metaEl = document.getElementById('meta');
       const container = document.getElementById('fragmentContainer');
-      const breadcrumb = document.getElementById('breadcrumb');
-      const backBtn = document.getElementById('backBtn');
-      const printBtn = document.getElementById('printBtn');
-      const openFragmentBtn = document.getElementById('openFragmentBtn');
 
-      // Build breadcrumb from origin info (if provided) or from title
-      const crumbs = [];
-      crumbs.push({ label: 'Home', href: 'index.html' });
-      if (origin_system) crumbs.push({ label: origin_system, href: `index.html?system=${encodeURIComponent(origin_system)}` });
-      if (origin_circ) crumbs.push({ label: origin_circ, href: `index.html?system=${encodeURIComponent(origin_system)}&circ=${encodeURIComponent(origin_circ)}` });
-      if (origin_sub) crumbs.push({ label: origin_sub, href: `index.html?system=${encodeURIComponent(origin_system)}&circ=${encodeURIComponent(origin_circ)}&sub=${encodeURIComponent(origin_sub)}` });
-
-      if (crumbs.length > 0) {
-        breadcrumb.innerHTML = crumbs.map((c,i) => {
-          if (i === crumbs.length - 1) return `<span>${escapeHtml(c.label)}</span>`;
-          return `<a class="crumb" href="${escapeHtml(c.href)}">${escapeHtml(c.label)}</a> <span aria-hidden="true">›</span>`;
-        }).join(' ');
-        breadcrumb.style.display = 'flex';
-      } else {
-        breadcrumb.style.display = 'none';
-      }
-
-      // Back button logic: attempt history.back(), else fallback to index with origin params
-      backBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        // attempt history back
-        try {
-          history.back();
-        } catch (err) {}
-        // fallback after 300ms — if still on this page, navigate to index with origin params
-        setTimeout(() => {
-          // current URL still this page -> fallback
-          if (location.pathname.endsWith('detail.html')) {
-            const qs = new URLSearchParams();
-            if (origin_system) qs.set('system', origin_system);
-            if (origin_circ) qs.set('circ', origin_circ);
-            if (origin_sub) qs.set('sub', origin_sub);
-            const href = 'index.html' + (qs.toString() ? '?' + qs.toString() : '');
-            location.href = href;
-          }
-        }, 300);
-      });
-
-      // Print
-      printBtn.addEventListener('click', (e) => { e.preventDefault(); window.print(); });
-
-      // Open fragment raw file
-      openFragmentBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (fragmentParam) {
-          const url = './fragments/' + fragmentParam;
-          window.open(url, '_blank');
-        }
-      });
-
-      // Load fragment if provided
+      // If fragment passed, load it and render sanitized HTML
       if (fragmentParam) {
         titleEl.textContent = titleParam || fragmentParam.split('/').pop();
-        metaEl.textContent = fragmentParam;
         try {
           const res = await fetch('./fragments/' + fragmentParam, {cache:'no-cache'});
           if (!res.ok) throw new Error('Not found: ' + res.status);
           const html = await res.text();
-          container.innerHTML = DOMPurify.sanitize(html, {ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tr','td'], ALLOWED_ATTR:['class','id']});
+          container.innerHTML = DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tr','td'],
+            ALLOWED_ATTR: ['class','id']
+          });
           return;
         } catch (err) {
-          container.innerHTML = `<div class="no-data">Could not load: ${escapeHtml(err.message)}</div>`;
+          container.innerHTML = '<div class="no-data">Could not load content: ' + escapeHtml(err.message) + '</div>';
           return;
         }
       }
 
-      // fallback: try to resolve via map.json using origin params or system/circ/sub query params
-      const system = qs('system') || origin_system;
-      const circ = qs('circ') || origin_circ;
-      const sub = qs('sub') || origin_sub;
+      // fallback: try simple system/circ/sub resolution via map.json
+      const system = qs('system');
+      const circ = qs('circ');
+      const sub = qs('sub');
       if (system && circ) {
         try {
           const mapRes = await fetch('./fragments/map.json', {cache:'no-cache'});
@@ -155,7 +82,6 @@
             }
             if (mapped) {
               titleEl.textContent = titleParam || (sub || circ);
-              metaEl.textContent = mapped;
               const res = await fetch('./fragments/' + mapped, {cache:'no-cache'});
               if (!res.ok) throw new Error('Not found: ' + res.status);
               const html = await res.text();
@@ -168,10 +94,9 @@
         }
       }
 
-      // last fallback
+      // final fallback
       titleEl.textContent = titleParam || 'Details';
-      metaEl.textContent = '';
-      container.innerHTML = '<div class="no-data">No detail available for the selected item.</div>';
+      container.innerHTML = '<div class="no-data">No content available.</div>';
     })();
   </script>
 </body>

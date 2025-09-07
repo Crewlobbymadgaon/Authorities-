@@ -240,37 +240,81 @@ async function showSubMenu(circ){
 }
 
 /* Fragment loader - resolves mapping and fetches fragment file */
-async function loadFragmentFor(keyPath) {
-  if (!Array.isArray(keyPath)) keyPath = String(keyPath).split('>').map(s=>s.trim());
+/**
+ * Load a fragment for a given keyPath.
+ * - keyPath: array like ["Absolute Block System","Signal Failure","Home Signal"]
+ * - opts: { inline: boolean }  // if inline=true, render into #authorityCard; otherwise navigate to detail.html
+ */
+async function loadFragmentFor(keyPath, opts = {}) {
+  // normalize keyPath (allow "A > B > C" strings)
+  if (!Array.isArray(keyPath)) keyPath = String(keyPath).split('>').map(s => s.trim());
+
+  // try to resolve mapping
   const map = await loadFragmentMap();
   const mapped = resolveMapPath(map, keyPath);
+
+  // No mapping: show fallback or navigate with fallback params
   if (!mapped) {
-    showFallbackMessage(keyPath);
+    if (opts.inline) {
+      showFallbackMessage(keyPath);
+    } else {
+      // navigate to detail page with fallback query params
+      const qs = new URLSearchParams({
+        system: keyPath[0] || '',
+        circ: keyPath[1] || '',
+        sub: keyPath[2] || ''
+      });
+      window.location.href = `detail.html?${qs.toString()}`;
+    }
     return;
   }
 
-  // if the map entry is an object (not expected here), fallback
+  // If mapping is not a string, treat as missing
   if (typeof mapped !== 'string') {
-    showFallbackMessage(keyPath);
+    if (opts.inline) {
+      showFallbackMessage(keyPath);
+    } else {
+      const qs = new URLSearchParams({
+        system: keyPath[0] || '',
+        circ: keyPath[1] || '',
+        sub: keyPath[2] || ''
+      });
+      window.location.href = `detail.html?${qs.toString()}`;
+    }
     return;
   }
 
-  const fullPath = './fragments/' + mapped;
-  try {
-    const res = await fetch(fullPath, {cache:'no-cache'});
-    if (!res.ok) throw new Error('Fragment not found: ' + res.status);
-    const html = await res.text();
-    const safe = DOMPurify.sanitize(html, {ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tbody','tr','td'], ALLOWED_ATTR: ['class','id']});
-    const card = el("authorityCard");
-    card.innerHTML = `<div class="sub-heading"><span style="flex:1;text-align:center;">${escapeHtml(keyPath[keyPath.length-1])}</span><div><button id="cardCloseBtn" class="card-close" aria-label="Close details">Close <i class="fas fa-times" aria-hidden="true"></i></button></div></div><div class="card-body">${safe}</div>`;
-    card.style.display = "flex";
-    card.setAttribute("aria-hidden","false");
-    const closeBtn = card.querySelector('#cardCloseBtn');
-    if (closeBtn) closeBtn.addEventListener('click', () => goBack());
-  } catch (err) {
-    console.error('Error loading fragment:', err);
-    showFallbackMessage(keyPath, err);
+  // If caller explicitly requested inline rendering, fetch & render
+  if (opts.inline) {
+    const fullPath = './fragments/' + mapped;
+    try {
+      const res = await fetch(fullPath, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('Fragment not found: ' + res.status);
+      const html = await res.text();
+      const safe = DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tbody','tr','td'],
+        ALLOWED_ATTR: ['class','id']
+      });
+
+      const card = el("authorityCard");
+      card.innerHTML = `<div class="sub-heading"><span style="flex:1;text-align:center;">${escapeHtml(keyPath[keyPath.length-1])}</span><div><button id="cardCloseBtn" class="card-close" aria-label="Close details">Close <i class="fas fa-times" aria-hidden="true"></i></button></div></div><div class="card-body">${safe}</div>`;
+      card.style.display = "flex";
+      card.setAttribute("aria-hidden","false");
+      const closeBtn = card.querySelector('#cardCloseBtn');
+      if (closeBtn) closeBtn.addEventListener('click', () => goBack());
+      return;
+    } catch (err) {
+      console.error('Error loading fragment (inline):', err);
+      showFallbackMessage(keyPath, err);
+      return;
+    }
   }
+
+  // Default (non-inline) behavior: navigate to detail page with fragment path
+  // Pass the mapped path and a title param
+  const fragmentParam = encodeURIComponent(mapped);
+  const titleParam = encodeURIComponent(keyPath[keyPath.length - 1] || '');
+  window.location.href = `detail.html?fragment=${fragmentParam}&title=${titleParam}`;
 }
 
 function showFallbackMessage(keyPath, err) {

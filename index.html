@@ -239,63 +239,46 @@ async function showSubMenu(circ){
   setTimeout(()=> subMenu.querySelector('.grid-item')?.focus(),80);
 }
 
-/* Fragment loader - resolves mapping and fetches fragment file */
 /**
- * Load a fragment for a given keyPath.
- * - keyPath: array like ["Absolute Block System","Signal Failure","Home Signal"]
- * - opts: { inline: boolean }  // if inline=true, render into #authorityCard; otherwise navigate to detail.html
+ * Replacement loadFragmentFor: when navigating to detail page it now includes origin params
+ * so detail.html can navigate back or reopen the right system view.
  */
 async function loadFragmentFor(keyPath, opts = {}) {
-  // normalize keyPath (allow "A > B > C" strings)
   if (!Array.isArray(keyPath)) keyPath = String(keyPath).split('>').map(s => s.trim());
-
-  // try to resolve mapping
   const map = await loadFragmentMap();
   const mapped = resolveMapPath(map, keyPath);
 
-  // No mapping: show fallback or navigate with fallback params
-  if (!mapped) {
-    if (opts.inline) {
-      showFallbackMessage(keyPath);
-    } else {
-      // navigate to detail page with fallback query params
-      const qs = new URLSearchParams({
-        system: keyPath[0] || '',
-        circ: keyPath[1] || '',
-        sub: keyPath[2] || ''
-      });
-      window.location.href = `detail.html?${qs.toString()}`;
-    }
-    return;
-  }
+  // Build origin params (if available in current UI)
+  const originParams = {};
+  if (currentSystem) originParams.origin_system = currentSystem;
+  if (currentCircumstance) originParams.origin_circ = currentCircumstance;
+  // If there is a submenu selected, try to include it
+  if (keyPath.length >= 3) originParams.origin_sub = keyPath[2];
 
-  // If mapping is not a string, treat as missing
-  if (typeof mapped !== 'string') {
+  if (!mapped || typeof mapped !== 'string') {
     if (opts.inline) {
       showFallbackMessage(keyPath);
+      return;
     } else {
       const qs = new URLSearchParams({
         system: keyPath[0] || '',
         circ: keyPath[1] || '',
-        sub: keyPath[2] || ''
+        sub: keyPath[2] || '',
+        ...originParams
       });
       window.location.href = `detail.html?${qs.toString()}`;
+      return;
     }
-    return;
   }
 
-  // If caller explicitly requested inline rendering, fetch & render
+  // inline rendering (legacy)
   if (opts.inline) {
     const fullPath = './fragments/' + mapped;
     try {
       const res = await fetch(fullPath, { cache: 'no-cache' });
       if (!res.ok) throw new Error('Fragment not found: ' + res.status);
       const html = await res.text();
-      const safe = DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tbody','tr','td'],
-        ALLOWED_ATTR: ['class','id']
-      });
-
+      const safe = DOMPurify.sanitize(html, { ALLOWED_TAGS: ['section','h1','h2','h3','h4','p','ul','ol','li','dl','dt','dd','strong','em','br','table','tbody','tr','td'], ALLOWED_ATTR: ['class','id'] });
       const card = el("authorityCard");
       card.innerHTML = `<div class="sub-heading"><span style="flex:1;text-align:center;">${escapeHtml(keyPath[keyPath.length-1])}</span><div><button id="cardCloseBtn" class="card-close" aria-label="Close details">Close <i class="fas fa-times" aria-hidden="true"></i></button></div></div><div class="card-body">${safe}</div>`;
       card.style.display = "flex";
@@ -310,11 +293,15 @@ async function loadFragmentFor(keyPath, opts = {}) {
     }
   }
 
-  // Default (non-inline) behavior: navigate to detail page with fragment path
-  // Pass the mapped path and a title param
+  // Default - navigate to detail page and include fragment + origin params
   const fragmentParam = encodeURIComponent(mapped);
   const titleParam = encodeURIComponent(keyPath[keyPath.length - 1] || '');
-  window.location.href = `detail.html?fragment=${fragmentParam}&title=${titleParam}`;
+  const qs = new URLSearchParams({
+    fragment: mapped,
+    title: keyPath[keyPath.length - 1] || '',
+    ...originParams
+  });
+  window.location.href = `detail.html?${qs.toString()}`;
 }
 
 function showFallbackMessage(keyPath, err) {

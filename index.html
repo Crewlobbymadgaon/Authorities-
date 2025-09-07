@@ -34,7 +34,15 @@ header { height:var(--header-height); background:linear-gradient(90deg,var(--acc
 .grid-item { background:white; border-radius:10px; padding:20px; box-shadow:0 4px 10px rgba(0,0,0,0.08); font-size:1.05rem; font-weight:700; cursor:pointer; transition:transform .18s, background .18s; text-align:center; line-height:1.25; user-select:none; }
 .grid-item:hover { background:var(--accent-blue); color:white; transform:translateY(-4px) scale(1.02); }
 .card { display:none; max-width:900px; margin:20px auto; background:white; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.14); overflow:hidden; animation:fadeIn .35s; }
-#authorityCard { display:none; max-width:900px; margin:20px auto; background:#fff; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.15); height:auto; max-height:75vh; display:flex; flex-direction:column; overflow:hidden; }
+.block:focus {
+  outline: none;
+  transform: translateY(-2px) scale(1.02);
+}
+/* Visible keyboard focus ring only (when using keyboard navigation) */
+.block:focus-visible {
+  box-shadow: 0 0 0 4px rgba(25,118,210,0.12);
+}
+  #authorityCard { display:none; max-width:900px; margin:20px auto; background:#fff; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.15); height:auto; max-height:75vh; display:flex; flex-direction:column; overflow:hidden; }
 #authorityCard .sub-heading { position:sticky; top:0; background:#f4f8fb; color:#222; font-size:18px; font-weight:700; text-align:center; padding:12px; border-bottom:1px solid #e6eef6; z-index:2; display:flex; justify-content:space-between; align-items:center; gap:12px; }
 #authorityCard .card-body { flex:1 1 auto; overflow-y:auto; padding:18px 22px; font-size:15px; line-height:1.6; max-height:calc(75vh - 64px); outline:none; }
 .card-close { background:transparent; border:none; font-size:0.95rem; color:#444; cursor:pointer; padding:6px 8px; border-radius:8px; }
@@ -135,22 +143,49 @@ async function showSubMenu(circ){
   const map = await loadFragmentMap();
   const subData = map[currentSystem] && map[currentSystem][circ];
 
-  // direct fragment (string) -> load it
+  // Helper to navigate to detail page given a mapped path or fallback params
+  function navigateToDetail({ mappedPath = null, title = '', fallback = {} } = {}) {
+    if (mappedPath) {
+      // mappedPath example: "absolute/signal-failure/home-signal.html"
+      window.location.href = `detail.html?fragment=${encodeURIComponent(mappedPath)}&title=${encodeURIComponent(title || circ)}`;
+    } else {
+      const qs = new URLSearchParams({
+        system: fallback.system || currentSystem || '',
+        circ: fallback.circ || circ || '',
+        sub: fallback.sub || ''
+      });
+      window.location.href = `detail.html?${qs.toString()}`;
+    }
+  }
+
+  // Direct fragment (string) -> navigate to detail page
   if (typeof subData === 'string' || circ === "TIC on Single Line") {
     openedFromSubmenu = false;
-    loadFragmentFor([currentSystem, circ]);
+    const mapped = resolveMapPath(map, [currentSystem, circ]);
+    if (mapped && typeof mapped === 'string') {
+      navigateToDetail({ mappedPath: mapped, title: circ });
+    } else {
+      // fallback: pass system & circ so detail.html can try to resolve
+      navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ: circ } });
+    }
     return;
   }
 
-  // if subData is an object -> show submenu buttons
-  const subMenu = el("subMenuGrid");
-  clearChildren(subMenu);
-
+  // If subData is not an object (or missing) -> fallback to navigate by system/circ
   if (!subData || typeof subData !== "object") {
     openedFromSubmenu = false;
-    loadFragmentFor([currentSystem, circ]);
+    const mapped = resolveMapPath(map, [currentSystem, circ]);
+    if (mapped && typeof mapped === 'string') {
+      navigateToDetail({ mappedPath: mapped, title: circ });
+    } else {
+      navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ: circ } });
+    }
     return;
   }
+
+  // subData is an object -> build submenu grid which will navigate on click
+  const subMenu = el("subMenuGrid");
+  clearChildren(subMenu);
 
   Object.keys(subData).forEach(sub => {
     const div = document.createElement("div");
@@ -159,11 +194,44 @@ async function showSubMenu(circ){
     div.role = "listitem";
     div.setAttribute("data-key", sub);
     div.textContent = sub;
-    div.onclick = () => { openedFromSubmenu = true; loadFragmentFor([currentSystem, circ, sub]); };
-    div.onkeydown = (e) => { if(e.key === "Enter" || e.key === " ") { e.preventDefault(); openedFromSubmenu = true; loadFragmentFor([currentSystem, circ, sub]); } };
+
+    // click handler: resolve mapping for this specific submenu and navigate
+    div.onclick = async () => {
+      openedFromSubmenu = true;
+      try {
+        const mapped = resolveMapPath(map, [currentSystem, circ, sub]);
+        if (mapped && typeof mapped === 'string') {
+          navigateToDetail({ mappedPath: mapped, title: sub });
+        } else {
+          // fallback to passing system/circ/sub
+          navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ: circ, sub: sub } });
+        }
+      } catch (err) {
+        console.error('Error resolving fragment mapping:', err);
+        navigateToDetail({ mappedPath: null, fallback: { system: currentSystem, circ: circ, sub: sub } });
+      }
+    };
+
+    // keyboard support
+    div.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        div.click();
+      }
+      if (e.key === "Home") {
+        e.preventDefault();
+        subMenu.querySelector('.grid-item')?.focus();
+      }
+      if (e.key === "End") {
+        e.preventDefault();
+        subMenu.querySelector('.grid-item:last-child')?.focus();
+      }
+    };
+
     subMenu.appendChild(div);
   });
 
+  // swap views
   el("circumstancesGrid").style.display = "none";
   subMenu.style.display = "grid";
   el("authorityCard").style.display = "none";
